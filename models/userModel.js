@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import validator from "validator";
+import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema({
   firstName: {
@@ -55,6 +56,12 @@ const userSchema = new mongoose.Schema({
   },
 });
 
+userSchema.methods.generateJWT = async function () {
+  return jwt.sign({ _id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: "1d",
+  });
+};
+
 const User = mongoose.models.User || mongoose.model("User", userSchema);
-// check this in detail
-export default userModel;
+
+export default User;
