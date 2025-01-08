@@ -1,3 +1,4 @@
+import transporter from "../config/nodemailer.js";
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 
@@ -11,7 +12,6 @@ export const register = async (req, res) => {
 
   try {
     const userExists = await User.findOne({ email });
-    console.log(userExists);
 
     if (userExists) {
       return res
@@ -33,8 +33,21 @@ export const register = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       samesite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      maxAge: 7 * 24 * 60 * 60 * 10000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
+
+    const mailOptions = {
+      from: `"Founder Flarelabs" <${process.env.SENDER_EMAIL}>`,
+      to: email,
+      subject: "Message from Flarelabs!",
+      html: `
+        <h1>Welcome to Flarelabs!</h1>
+        <p>Hey <b>${firstName}</b>,</p>
+        <p>Your account has been created with the email ID: <b>${email}</b>.</p>
+      `,
+    };
+
+    await transporter.sendMail(mailOptions);
 
     res.status(200).json({
       message: "user created successfully",
@@ -66,7 +79,7 @@ export const login = async (req, res) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       samesite: process.env.NODE_ENV === "production" ? "none" : "strict",
-      maxAge: 7 * 24 * 60 * 60 * 10000,
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res.status(200).json({
       message: "user logged in successfully",
