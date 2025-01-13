@@ -105,3 +105,88 @@ export const logout = async (req, res) => {
     });
   }
 };
+
+export const sendOtp = async (req, res) => {
+  try {
+    const user = req.user;
+ 
+
+
+    
+
+    if (user.isAccountVerified) {
+      return res.status(400).json({
+        message: "Account already verified",
+      });
+    }
+
+    console.log(user.email);
+    
+
+    const otp = String(Math.floor(Math.random() + 100000) * 900000);
+
+    user.verifyOtp = otp;
+    user.verifyOtpExpiresAt = Date.now() + 5 * 60 * 1000;
+
+    await user.save();
+
+    const mailOptions = {
+      from: `"Founder Flarelabs" <${process.env.SENDER_EMAIL}>`,
+      to: user.email,
+      subject: "Accountverification OTP",
+      text: `Your OTP is ${otp}. Verify your account using this OTP.`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    return res.status(200).json({
+      message:"OTP send successfully"
+    })
+  } catch (err) {
+    res.status(400).json({
+      message: err.message,
+    });
+  }
+};
+
+export const verifyOtp = async (req, res) => {
+  const { otp } = req.body;
+
+  if (!otp) {
+    res.status(404).json({ message: "Invalid request" });
+  }
+
+  try {
+    const user = await User.find(_id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Account doesn't exist!" });
+    }
+
+    if (user.verifyOtp === "" || user.verifyOtp !== otp) {
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    if (user.verifyOtpExpiresAt < Date.now()) {
+      return res.status(400).json({
+        message: "Invalid OTP",
+      });
+    }
+
+    user.isAccountVerified = true;
+    user.verifyOtp = "";
+    user.verifyOtpExpiresAt = 0;
+
+    await user.save();
+
+    return res.status(200).json({
+      message: `Account successfully verified`,
+    });
+  } catch (err) {
+    res.status(400).json({
+      message: err.message,
+    });
+  }
+};
